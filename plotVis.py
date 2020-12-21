@@ -14,6 +14,7 @@ from astroplan.plots import plot_airmass, plot_sky, plot_finder_image, plot_para
 from astropy.io import ascii
 from datetime import datetime
 from math import ceil
+from astroplan import download_IERS_A
 
 def main():
 	
@@ -28,6 +29,8 @@ def main():
     parser.add_argument('-n', '--number', type=int, help='Maximum number of object per plot.', default=1)
     args = parser.parse_args()
 
+    
+    #download_IERS_A()
 
     if args.plot == 'all' or args.plot=='FC':
         print('Warning! FC does not take PA into account.')
@@ -235,15 +238,22 @@ def createPlot(args,saveflag, id):
     if args.plot == 'par' or args.plot == 'all':
         if id == 0:
             plt.figure(figsize=(10,6))
+            plt.locator_params(axis='y', nbins=15)
+            plt.locator_params(axis='x', nbins=18)
         plot_parallactic(target, observer, observe_time)
         if args.mode == "list":
             plt.title(args.filename + '\n' + args.time[0])
-
         if saveflag == 1:
             if args.mode == 'list':
                 filename = args.filename + '_' + str(ceil(id/args.number))
             else:
                 filename = args.output
+            locs, labels = plt.yticks()   
+            label = []
+            for parrad in locs:
+                label.append(round(parrad*180/3.141))
+            plt.ylabel('Parallactic angle')
+            plt.yticks(locs, label)
             plt.legend()
             plt.tight_layout()
             plt.savefig(f'{filename}_par.png')
