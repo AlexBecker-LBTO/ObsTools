@@ -14,10 +14,10 @@ from astroplan.plots import plot_airmass, plot_sky, plot_finder_image, plot_para
 from astropy.io import ascii
 from datetime import datetime
 from math import ceil
-from astroplan import download_IERS_A
+import matplotlib.ticker as ticker
 
 def main():
-	
+    
     parser = argparse.ArgumentParser(description='Creates visibility plots, sky plots and other plots from ASCII tables and LBT OT and OB files.', formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-m', '--mode', type=str, help='Take coordinates from file or single coordinate from command line?' , choices=['list', 'single'])
     parser.add_argument('-f', '--filename', type=str, help='Filename of object list. Accepts simple ASCII table, MODS acquistion script, LUCI XML, LBC XML, and OT XML files.')
@@ -35,7 +35,7 @@ def main():
     if args.plot == 'all' or args.plot=='FC':
         print('Warning! FC does not take PA into account.')
     if args.mode == 'list':
-	    args.coordinate = ['','']
+        args.coordinate = ['','']
     if args.time[0] == 'now':
         datenow = Time(datetime.utcnow(), scale='utc')
         datenow = str(datenow).split()
@@ -55,8 +55,8 @@ def main():
 
     if args.coordinate[1].startswith('m'): args.coordinate[1] = args.coordinate[1].replace('m', '-')
     preparePlotting(args)
-			
-		
+            
+        
 
 
 
@@ -64,10 +64,10 @@ def preparePlotting(args):
     if args.filename is not None:
         if "." in args.filename and ".acq." not in args.filename:
             filetype = args.filename.split('.')[-1].lower()
-        elif ".acq." in filename:
+        elif ".acq." in args.filename:
             filetype = 'acq'
         else:
-            filetype = 'unknown'	
+            filetype = 'unknown'    
     if args.mode == 'single':
         createPlot(args,1, 0)
     if args.mode == 'list' and filetype != 'xml' and filetype != 'acq':
@@ -205,6 +205,7 @@ def createPlot(args,saveflag, id):
                 filename = args.output
             #plt.tight_layout()
             plt.axhline(y=30, ls='--', color='k')
+   
             plt.legend()
             plt.savefig(f'{filename}_Alt.png')
             plt.clf()
@@ -238,8 +239,8 @@ def createPlot(args,saveflag, id):
     if args.plot == 'par' or args.plot == 'all':
         if id == 0:
             plt.figure(figsize=(10,6))
-            plt.locator_params(axis='y', nbins=15)
-            plt.locator_params(axis='x', nbins=18)
+            #plt.locator_params(axis='y', nbins=13)
+            #plt.locator_params(axis='x', nbins=18)
         plot_parallactic(target, observer, observe_time)
         if args.mode == "list":
             plt.title(args.filename + '\n' + args.time[0])
@@ -248,12 +249,16 @@ def createPlot(args,saveflag, id):
                 filename = args.filename + '_' + str(ceil(id/args.number))
             else:
                 filename = args.output
+            plt.ylim(deg2rad(-360), deg2rad(360))
+            plt.yticks(np.arange(deg2rad(-360), deg2rad(360), step=deg2rad(45)))
             locs, labels = plt.yticks()   
             label = []
             for parrad in locs:
-                label.append(round(parrad*180/3.141))
-            plt.ylabel('Parallactic angle')
+                label.append(round(rad2deg(parrad)))
             plt.yticks(locs, label)
+            
+            plt.ylabel('Parallactic angle')
+            plt.grid()
             plt.legend()
             plt.tight_layout()
             plt.savefig(f'{filename}_par.png')
@@ -264,5 +269,13 @@ def createPlot(args,saveflag, id):
         del coordinates
         del target
         del observe_time2
+
+def deg2rad(x):
+    return x * np.pi / 180
+
+
+def rad2deg(x):
+    return x * 180 / np.pi
+        
 if __name__ == '__main__':
     main()
